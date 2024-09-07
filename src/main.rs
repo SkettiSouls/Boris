@@ -1,91 +1,109 @@
-use std::env;
+#![allow(deprecated)]
+mod commands;
+
+use std::{
+    collections::HashSet,
+    env,
+    sync::Arc,
+};
 
 use serenity::{
     async_trait,
-    builder::CreateMessage,
-    model::{
-        channel::Message,
-        gateway::Ready,
-        user::User,
+    framework::{
+        StandardFramework,
+        standard::{
+            Configuration,
+            macros::group,
+        },
     },
+    gateway::ShardManager,
+    model::gateway::Ready,
     prelude::{
         Client,
         Context,
         EventHandler,
         GatewayIntents,
+        TypeMapKey,
     },
-    utils::MessageBuilder,
 };
+
+use crate::commands::summon::*;
+
+struct ShardManagerContainer;
+
+impl TypeMapKey for ShardManagerContainer {
+    type Value = Arc<ShardManager>;
+}
 
 struct Handler;
 
 #[async_trait]
 impl EventHandler for Handler {
-    async fn message(&self, ctx: Context, msg: Message) {
-        if let Err(why) = handler(self, ctx, msg).await {
-            println!("Error sending message: {why:?}")
-        }
-    }
-
     async fn ready(&self, _: Context, ready: Ready) {
         println!("{} is connected!", ready.user.name)
     }
 }
 
+#[group]
+#[commands(summon)]
+struct General;
+
 #[tokio::main]
 async fn main() {
+    // Get environment variables from crate/.env
     dotenv::dotenv().expect("Failed to load .env file.");
+
     // Login with a bot token from the environment
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
+
+    let http = serenity::http::Http::new(&token);
+
+    let (owners, bot_id) = match http.get_current_application_info().await {
+        Ok(info) => {
+            let mut owners = HashSet::new();
+            if let Some(owner) = &info.owner {
+                owners.insert(owner.id);
+            }
+
+            (owners, info.id)
+        },
+
+        Err(why) => panic!("Could not access application info: {:?}", why),
+    };
+
+    let framework = StandardFramework::new()
+        .group(&GENERAL_GROUP);
+
+    framework.configure(Configuration::new()
+        .owners(owners)
+        .prefix("!")
+    );
+
     // Set gateway intents, which decides what events the bot will be notified about
     let intents = GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::DIRECT_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT;
 
-    // Create a new instance of the Client, logging in as a bot.
-    let mut client =
-        Client::builder(&token, intents).event_handler(Handler).await.expect("Err creating client");
+    let mut client = Client::builder(&token, intents)
+        .framework(framework)
+        .event_handler(Handler)
+        .await
+        .expect("Err creating client");
+
+    {
+        let mut data = client.data.write().await;
+        data.insert::<ShardManagerContainer>(client.shard_manager.clone());
+    }
+
+    let shard_manager = client.shard_manager.clone();
+
+    tokio::spawn(async move {
+        tokio::signal::ctrl_c().await.expect("Could not register ctrl+c handler");
+        shard_manager.shutdown_all().await;
+    });
 
     // Start listening for events by starting a single shard
     if let Err(why) = client.start().await {
         println!("Client error: {why:?}");
     }
-}
-
-async fn handler(handler: &Handler, ctx: Context, msg: Message) -> Result<(), Box<dyn std::error::Error>> {
-    if msg.content.contains("!summon") {
-        if !msg.mentions.is_empty() {
-            for user in msg.mentions {
-                if !user.bot {
-                    let message = CreateMessage::new().content("Get on stink ass");
-                    let dm_user = User::dm(&user, &ctx.http, message).await;
-                    let response = MessageBuilder::new()
-                        .push("Summoning ")
-                        .push_bold_safe(user.name)
-                        .push("...")
-                        .build();
-
-                    msg.channel_id.say(&ctx.http, response).await?;
-                } else {
-                    // Error for summoning bots
-                    let response = MessageBuilder::new()
-                        .push("Failed to summon ")
-                        .push_bold_safe(user.name)
-                        .push_line(":")
-                        .push("Cannot summon beings without souls.")
-                        .build();
-
-                    msg.channel_id.say(&ctx.http, response).await?;
-                }
-            }
-        } else {
-            let response = MessageBuilder::new()
-                .push("Please provide a user to summon.")
-                .build();
-
-            msg.channel_id.say(&ctx.http, response).await?;
-        }
-    }
-
-    return Ok(())
 }
