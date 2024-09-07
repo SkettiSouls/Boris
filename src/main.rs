@@ -5,6 +5,7 @@ use serenity::{
     builder::CreateMessage,
     model::{
         channel::Message,
+        gateway::Ready,
         user::User,
     },
     prelude::{
@@ -24,6 +25,10 @@ impl EventHandler for Handler {
         if let Err(why) = handler(self, ctx, msg).await {
             println!("Error sending message: {why:?}")
         }
+    }
+
+    async fn ready(&self, _: Context, ready: Ready) {
+        println!("{} is connected!", ready.user.name)
     }
 }
 
@@ -80,5 +85,6 @@ async fn handler(handler: &Handler, ctx: Context, msg: Message) -> Result<(), Bo
             msg.channel_id.say(&ctx.http, response).await?;
         }
     }
+
     return Ok(())
 }
