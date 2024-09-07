@@ -1,8 +1,8 @@
 use serenity::{
     builder::CreateMessage,
     framework::standard::{
-        macros::command,
         CommandResult,
+        macros::command,
     },
     model::{
         channel::Message,
@@ -17,11 +17,12 @@ async fn summon(ctx: &Context, msg: &Message) -> CommandResult {
     if !msg.mentions.is_empty() {
         for user in &msg.mentions {
             if !user.bot {
+                let nick = User::nick_in(&user, &ctx.http, &msg.guild_id.unwrap()).await;
                 let message = CreateMessage::new().content("Get on stink ass");
                 let dm_user = User::dm(&user, &ctx.http, message).await;
                 let response = MessageBuilder::new()
                     .push("Summoning ")
-                    .push_bold_safe(&user.name)
+                    .push_bold_safe(nick.unwrap())
                     .push("...")
                     .build();
 
