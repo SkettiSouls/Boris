@@ -27,7 +27,10 @@ use serenity::{
     },
 };
 
-use crate::commands::summon::*;
+use crate::commands::{
+    summon::*,
+    hooks::*,
+};
 
 struct ShardManagerContainer;
 
@@ -72,6 +75,8 @@ async fn main() {
     };
 
     let framework = StandardFramework::new()
+        .before(before)
+        .after(after)
         .group(&GENERAL_GROUP);
 
     framework.configure(Configuration::new()
