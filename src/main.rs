@@ -34,6 +34,7 @@ impl EventHandler for Handler {
 
 #[tokio::main]
 async fn main() {
+    dotenv::dotenv().expect("Failed to load .env file.");
     // Login with a bot token from the environment
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
     // Set gateway intents, which decides what events the bot will be notified about
