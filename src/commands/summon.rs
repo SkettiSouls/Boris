@@ -18,11 +18,13 @@ async fn summon(ctx: &Context, msg: &Message) -> CommandResult {
         for user in &msg.mentions {
             if !user.bot {
                 let nick = User::nick_in(&user, &ctx.http, &msg.guild_id.unwrap()).await;
+                // TODO: Pick from a list of messages
                 let message = CreateMessage::new().content("Get on stink ass");
-                let dm_user = User::dm(&user, &ctx.http, message).await;
+                // TODO?: Add DM count
+                let _dm_user = User::dm(&user, &ctx.http, message).await;
                 let response = MessageBuilder::new()
                     .push("Summoning ")
-                    .push_bold_safe(nick.unwrap())
+                    .push_bold_safe(nick.as_ref().or(user.global_name.as_ref()).expect("Failed to get username"))
                     .push("...")
                     .build();
 
