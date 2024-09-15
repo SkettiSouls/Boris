@@ -18,6 +18,7 @@ use serenity::{
     },
     gateway::ShardManager,
     model::gateway::Ready,
+    model::channel::Message,
     prelude::{
         Client,
         Context,
@@ -30,6 +31,7 @@ use serenity::{
 use crate::commands::{
     summon::*,
     hooks::*,
+    log::*,
 };
 
 struct ShardManagerContainer;
@@ -44,6 +46,10 @@ struct Handler;
 impl EventHandler for Handler {
     async fn ready(&self, _: Context, ready: Ready) {
         println!("{} is connected!", ready.user.name)
+    }
+
+    async fn message(&self, _ctx: Context, msg: Message) {
+        log_dms(&msg).await
     }
 }
 
