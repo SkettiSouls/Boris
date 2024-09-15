@@ -1,13 +1,7 @@
 use serenity::{
     builder::CreateMessage,
-    framework::standard::{
-        CommandResult,
-        macros::command,
-    },
-    model::{
-        channel::Message,
-        user::User,
-    },
+    framework::standard::{macros::command, CommandResult},
+    model::{channel::Message, user::User},
     prelude::Context,
     utils::MessageBuilder,
 };
@@ -22,27 +16,33 @@ async fn summon(ctx: &Context, msg: &Message) -> CommandResult {
                 let message_pool = [
                     "Get on stink ass",
                     "Holy shit man Humpty Dumpty just fell off the wall, I dont know what to do man bring a horse or something",
-                    "Arise",
+                    "IFRIT!!!! GET UP!!!!!!",
                     "My fellow americans, uhhh, get on the game (obama)",
                     r#"in your DMs. straight up "summoning it". and by "it" well, let's justr say.  My homie"#,
-                    "Its time",
+                    "Its time *vine boom*",
                     "PLEEEEEEEEEEEEEEEAAAAASE PLEASE PLEEASE PLEEEEEEEEEEEEEEEEEEEEEEEAAAAAAAAAAAASE",
                     "HELP IN GAIA",
                     "Wakey wakey",
-                    "I may seem calm but in my mind I've killed you three times fucking join you dickhead",
+                    "I may seem calm but in my mind I've killed you three times fucking join you dickhead", // Z
                 ];
 
                 let message = CreateMessage::new().content(
-                    message_pool.choose(&mut rand::thread_rng())
-                    .unwrap()
-                    .to_string());
+                    message_pool
+                        .choose(&mut rand::thread_rng())
+                        .unwrap()
+                        .to_string(),
+                );
 
                 let nick = User::nick_in(&user, &ctx.http, &msg.guild_id.unwrap()).await;
                 // TODO?: Add DM count
                 let _dm_user = User::dm(&user, &ctx.http, message).await;
                 let response = MessageBuilder::new()
                     .push("Summoning ")
-                    .push_bold_safe(nick.as_ref().or(user.global_name.as_ref()).expect("Failed to get username"))
+                    .push_bold_safe(
+                        nick.as_ref()
+                            .or(user.global_name.as_ref())
+                            .expect("Failed to get username"),
+                    )
                     .push("...")
                     .build();
 
@@ -67,5 +67,5 @@ async fn summon(ctx: &Context, msg: &Message) -> CommandResult {
         msg.channel_id.say(&ctx.http, response).await?;
     }
 
-    return Ok(())
+    return Ok(());
 }

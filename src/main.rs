@@ -1,38 +1,21 @@
 #![allow(deprecated)]
 mod commands;
 
-use std::{
-    collections::HashSet,
-    env,
-    sync::Arc,
-};
+use std::{collections::HashSet, env, sync::Arc};
 
 use serenity::{
     async_trait,
     framework::{
+        standard::{macros::group, Configuration},
         StandardFramework,
-        standard::{
-            Configuration,
-            macros::group,
-        },
     },
     gateway::ShardManager,
-    model::gateway::Ready,
     model::channel::Message,
-    prelude::{
-        Client,
-        Context,
-        EventHandler,
-        GatewayIntents,
-        TypeMapKey,
-    },
+    model::gateway::Ready,
+    prelude::{Client, Context, EventHandler, GatewayIntents, TypeMapKey},
 };
 
-use crate::commands::{
-    summon::*,
-    hooks::*,
-    log::*,
-};
+use crate::commands::{hooks::*, log::*, summon::*};
 
 struct ShardManagerContainer;
 
@@ -75,7 +58,7 @@ async fn main() {
             }
 
             (owners, info.id)
-        },
+        }
 
         Err(why) => panic!("Could not access application info: {:?}", why),
     };
@@ -85,10 +68,7 @@ async fn main() {
         .after(after)
         .group(&GENERAL_GROUP);
 
-    framework.configure(Configuration::new()
-        .owners(owners)
-        .prefix("!")
-    );
+    framework.configure(Configuration::new().owners(owners).prefix("!"));
 
     // Set gateway intents, which decides what events the bot will be notified about
     let intents = GatewayIntents::GUILD_MESSAGES
@@ -109,7 +89,9 @@ async fn main() {
     let shard_manager = client.shard_manager.clone();
 
     tokio::spawn(async move {
-        tokio::signal::ctrl_c().await.expect("Could not register ctrl+c handler");
+        tokio::signal::ctrl_c()
+            .await
+            .expect("Could not register ctrl+c handler");
         shard_manager.shutdown_all().await;
     });
 
