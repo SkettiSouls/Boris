@@ -26,6 +26,7 @@
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
 
           nativeBuildInputs = with pkgs; [
+            rust-analyzer
             (rust-bin.stable.latest.default.override {
               extensions = [ "rust-src" ];
             })
