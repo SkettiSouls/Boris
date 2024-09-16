@@ -1,9 +1,9 @@
-{ rustPlatform, fetchFromGitHub, version ? "git" }:
+{ rustPlatform, version ? "git", lib }:
 
 rustPlatform.buildRustPackage rec {
   pname = "boris";
   inherit version;
 
-  src = ../.;
+  src = lib.cleanSource ../.;
   cargoLock.lockFile = ../Cargo.lock;
 }
