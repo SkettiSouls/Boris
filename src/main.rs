@@ -15,7 +15,7 @@ use serenity::{
     prelude::{Client, Context, EventHandler, GatewayIntents, TypeMapKey},
 };
 
-use crate::commands::{hooks::*, log::*, summon::*};
+use crate::commands::{clear::*, hooks::*, log::*, summon::*};
 
 struct ShardManagerContainer;
 
@@ -37,7 +37,7 @@ impl EventHandler for Handler {
 }
 
 #[group]
-#[commands(summon)]
+#[commands(summon, clear, test_clear)]
 struct General;
 
 #[tokio::main]
