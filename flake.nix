@@ -1,44 +1,36 @@
 {
   inputs = {
+    flake-parts.url = "github:hercules-ci/flake-parts";
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    systems.url = "github:nix-systems/default";
-    rust-overlay.url = "github:oxalica/rust-overlay";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = inputs:
-    with inputs;
-    let
-      eachSystem = nixpkgs.lib.genAttrs (import systems);
-    in
-    {
-      devShells.x86_64-linux.default =
-        let
-          pkgs = import nixpkgs {
-            system = "x86_64-linux";
-            config.allowUnfree = true;
-            overlays = [
-              rust-overlay.overlays.default
-            ];
-          };
-        in
-        pkgs.mkShell {
-          RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
-          LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
+  outputs = inputs @ { flake-parts, ... }:
+  flake-parts.lib.mkFlake { inherit inputs; } 
+  {
+    systems = [ "x86_64-linux" ];
 
-          nativeBuildInputs = with pkgs; [
-            rust-analyzer
-            (rust-bin.stable.latest.default.override {
-              extensions = [ "rust-src" ];
-            })
-          ];
-        };
+    perSystem = { pkgs, system, ... }: {
+      _module.args.pkgs = (import inputs.nixpkgs {
+        inherit system;
+        overlays = [ inputs.rust-overlay.overlays.default ];
+      });
 
-      packages = eachSystem (system:
-        let
-          pkgs = import nixpkgs { inherit system; };
-        in
-        {
-          default = pkgs.callPackage ./nix/package.nix { };
-        });
+      devShells.default = {
+        RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
+        LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
+
+        packages = with pkgs; [
+          (rust-bin.stable.latest.default.override {
+            extensions = [ "rust-src" ];
+          })
+        ];
+      };
+
+      packages.default = pkgs.callPackage ./nix/package.nix {};
     };
+  };
 }
